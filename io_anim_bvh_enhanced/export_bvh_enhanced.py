@@ -22,7 +22,7 @@
 # fixes from Andrea Rugliancich
 
 import bpy
-
+import mathutils
 
 def write_armature(
         context,
@@ -92,6 +92,8 @@ def write_armature(
         # make relative if we can
         if bone.parent:
             loc = loc - node_locations[bone.parent.name]
+        else:
+            loc = mathutils.Vector((0.0, 0.0, 0.0))
 
         if indent:
             file.write("%sJOINT %s\n" % (indent_str, bone_name))
@@ -288,8 +290,11 @@ def write_armature(
                 mat_final = itrans @ mat_final @ trans
                 loc = mat_final.to_translation() + (dbone.rest_bone.head_local - dbone.parent.rest_bone.head_local)
             else:
-                mat_final = dbone.pose_mat @ dbone.rest_arm_imat
-                mat_final = itrans @ mat_final @ trans
+                #file.write(dbone.name)
+                obj = dbone.pose_bone.id_data
+                mat_final = obj.matrix_world #dbone.pose_mat @ dbone.rest_arm_imat
+                #mat_final = dbone.pose_mat @ dbone.rest_arm_imat
+                #mat_final = itrans @ mat_final @ trans
                 loc = mat_final.to_translation() + dbone.rest_bone.head
 
             # global_matrix: from current Blender coordinates system to output coordinates system 
@@ -303,10 +308,11 @@ def write_armature(
             if not dbone.skip_position:
                 file.write("%.6f %.6f %.6f " % (loc * global_scale)[:])
 
+            
+
             file.write("%.6f %.6f %.6f " % (degrees(rot[dbone.rot_order[0]]), degrees(rot[dbone.rot_order[1]]), degrees(rot[dbone.rot_order[2]])))
 
             dbone.prev_euler = rot
-
         file.write("\n")
 
     file.close()
